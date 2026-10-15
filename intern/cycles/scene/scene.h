@@ -57,6 +57,7 @@ class RenderStats;
 class SceneUpdateStats;
 class Volume;
 class VolumeManager;
+class PhotonMap;
 
 /* Scene Parameters */
 
@@ -173,6 +174,7 @@ class Scene : public NodeOwner {
   unique_ptr<BakeManager> bake_manager;
   unique_ptr<ProceduralManager> procedural_manager;
   unique_ptr<VolumeManager> volume_manager;
+  unique_ptr<PhotonMap> photon_map;
 
   /* default shaders */
   Shader *default_surface;

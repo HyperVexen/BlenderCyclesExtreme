@@ -710,6 +710,58 @@ class CyclesRenderSettings(bpy.types.PropertyGroup):
         default=1.0,
     )
 
+    # Vexen Extreme: Photon Caustics.
+    use_vexen_extreme: BoolProperty(
+        name="Vexen Extreme Mode",
+        description="Enable Vexen Cycles Extreme features",
+        default=False,
+    )
+    vexen_photon_caustics: BoolProperty(
+        name="Photon Caustics",
+        description="Use stochastic progressive photon mapping for physically correct caustics",
+        default=False,
+    )
+    photon_caustics_count: IntProperty(
+        name="Photons Per Iteration",
+        description="Number of photons emitted per caustic iteration",
+        default=100000, min=1000, max=100000000,
+    )
+    photon_caustics_radius: FloatProperty(
+        name="Initial Radius",
+        description="Initial photon gather radius",
+        default=0.1, min=0.001, max=10.0,
+        precision=4,
+    )
+    photon_caustics_alpha: FloatProperty(
+        name="Radius Reduction",
+        description="SPPM radius reduction alpha (lower = faster convergence, more bias)",
+        default=0.666667, min=0.1, max=1.0,
+        precision=4,
+    )
+    photon_caustics_max_bounces: IntProperty(
+        name="Max Specular Depth",
+        description="Maximum specular bounces for photon tracing",
+        default=8, min=1, max=64,
+    )
+    photon_caustics_max_photons: IntProperty(
+        name="Max Photons",
+        description="Memory cap: maximum stored photons",
+        default=2000000, min=10000, max=50000000,
+    )
+    photon_caustics_clamp: FloatProperty(
+        name="Photon Clamp",
+        description="Clamp photon flux to reduce fireflies",
+        default=10.0, min=0.0, max=1000.0,
+    )
+    photon_caustics_gather_mode: EnumProperty(
+        name="Gather Mode",
+        items=[
+            ('PRIMARY', "Primary Diffuse Only", "Gather at first diffuse hit (fastest)"),
+            ('ALL', "All Diffuse Vertices", "Gather at all diffuse vertices (indirect caustics)"),
+        ],
+        default='PRIMARY',
+    )
+
     use_guiding: BoolProperty(
         name="Guiding",
         description="Use path guiding for sampling paths. Path guiding incrementally "

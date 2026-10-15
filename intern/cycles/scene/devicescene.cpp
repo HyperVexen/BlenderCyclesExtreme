@@ -63,7 +63,10 @@ DeviceScene::DeviceScene(Device *device)
       image_textures(device, "image_textures", MEM_GLOBAL),
       image_texture_tile_descriptors(device, "image_texture_tile_descriptors", MEM_GLOBAL),
       image_texture_tile_access_state(device, "image_texture_tile_access_state", MEM_GLOBAL),
-      image_texture_udims(device, "image_texture_udims", MEM_GLOBAL)
+      image_texture_udims(device, "image_texture_udims", MEM_GLOBAL),
+      photons(device, "photons", MEM_GLOBAL),
+      photon_cell_offsets(device, "photon_cell_offsets", MEM_GLOBAL),
+      photon_indices(device, "photon_indices", MEM_GLOBAL)
 {
   memset((void *)&data, 0, sizeof(data));
 }

@@ -55,6 +55,7 @@ set(SRC
   tables.cpp
   tabulated_sobol.cpp
   volume.cpp
+  photon_map.cpp
 )
 
 set(SRC_HEADERS
@@ -95,6 +96,7 @@ set(SRC_HEADERS
   tables.h
   tabulated_sobol.h
   volume.h
+  photon_map.h
 )
 
 set(LIB

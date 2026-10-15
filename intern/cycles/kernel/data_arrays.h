@@ -98,5 +98,10 @@ KERNEL_DATA_ARRAY_WRITABLE(uint8_t, image_texture_tile_access_state)
 KERNEL_DATA_ARRAY(KernelImageUDIM, image_texture_udims)
 KERNEL_DATA_ARRAY(KernelImageInfo, image_info)
 
+/* Photon caustics (Vexen Extreme). */
+KERNEL_DATA_ARRAY(PhotonRecord, photons)
+KERNEL_DATA_ARRAY(uint, photon_cell_offsets)
+KERNEL_DATA_ARRAY(uint, photon_indices)
+
 #undef KERNEL_DATA_ARRAY
 #undef KERNEL_DATA_ARRAY_WRITABLE

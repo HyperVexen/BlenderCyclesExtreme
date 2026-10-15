@@ -215,6 +215,12 @@ set(SRC_KERNEL_INTEGRATOR_HEADERS
   integrator/surface_shader.h
   integrator/volume_shader.h
   integrator/volume_stack.h
+  integrator/photon_types.h
+  integrator/photon_emit.h
+  integrator/photon_shade_specular.h
+  integrator/photon_store.h
+  integrator/photon_grid.h
+  integrator/photon_gather.h
 )
 
 set(SRC_KERNEL_LIGHT_HEADERS

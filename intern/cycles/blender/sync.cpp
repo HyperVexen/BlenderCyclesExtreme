@@ -383,6 +383,17 @@ void BlenderSync::sync_integrator(blender::ViewLayer &b_view_layer,
   integrator->set_caustics_refractive(get_boolean(cscene, "caustics_refractive"));
   integrator->set_filter_glossy(get_float(cscene, "blur_glossy"));
 
+  /* Vexen Extreme. */
+  integrator->set_use_vexen_extreme(get_boolean(cscene, "use_vexen_extreme"));
+  integrator->set_vexen_photon_caustics(get_boolean(cscene, "vexen_photon_caustics"));
+  integrator->set_photon_caustics_count(get_int(cscene, "photon_caustics_count"));
+  integrator->set_photon_caustics_radius(get_float(cscene, "photon_caustics_radius"));
+  integrator->set_photon_caustics_alpha(get_float(cscene, "photon_caustics_alpha"));
+  integrator->set_photon_caustics_max_bounces(get_int(cscene, "photon_caustics_max_bounces"));
+  integrator->set_photon_caustics_max_photons(get_int(cscene, "photon_caustics_max_photons"));
+  integrator->set_photon_caustics_clamp(get_float(cscene, "photon_caustics_clamp"));
+  integrator->set_photon_caustics_gather_mode(get_int(cscene, "photon_caustics_gather_mode"));
+
   integrator->set_use_pixel_jitter(get_boolean(cscene, "use_pixel_jitter"));
 
   bool use_custom_pixel_jitter_sample = false;

@@ -7,6 +7,7 @@
 #include "device/cpu/device.h"
 #include "device/device.h"
 #include "integrator/path_trace.h"
+#include "integrator/photon_pass.h"
 #include "scene/background.h"
 #include "scene/camera.h"
 #include "scene/image.h"
@@ -215,6 +216,37 @@ void Session::run_main_render_loop()
 
       /* update status and timing */
       update_status_time();
+
+      /* Photon caustics pass (Vexen Extreme). */
+      if (scene->integrator->get_use_vexen_extreme() &&
+          scene->integrator->get_vexen_photon_caustics())
+      {
+        if (render_work.path_trace.start_sample == 0) {
+          printf("Vexen Photon Caustics: Executing photon pass...\n");
+          fflush(stdout);
+          scene->photon_map->reset(scene->integrator->get_photon_caustics_radius(),
+                                   scene->integrator->get_photon_caustics_alpha(),
+                                   scene->integrator->get_photon_caustics_max_photons());
+          if (device->info.type != DEVICE_CPU) {
+            PhotonPass::execute_gpu(scene.get(),
+                                    scene->photon_map.get(),
+                                    device.get(),
+                                    scene->integrator->get_photon_caustics_count(),
+                                    scene->integrator->get_photon_caustics_max_bounces(),
+                                    scene->integrator->get_photon_caustics_clamp(),
+                                    scene->integrator->get_seed());
+          }
+          else {
+            PhotonPass::execute_cpu(scene.get(),
+                                    scene->photon_map.get(),
+                                    device.get(),
+                                    scene->integrator->get_photon_caustics_count(),
+                                    scene->integrator->get_photon_caustics_max_bounces(),
+                                    scene->integrator->get_photon_caustics_clamp(),
+                                    scene->integrator->get_seed());
+          }
+        }
+      }
 
       /* render */
       path_trace_->render(render_work);

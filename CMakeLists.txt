@@ -628,7 +628,7 @@ option(WITH_EMBREE "Build Cycles with Embree support, and use Embree BVH in Blen
 
 # Cycles
 option(WITH_CYCLES "Enable Cycles Render Engine" ON)
-option(WITH_CYCLES_OSL "Build Cycles with OpenShadingLanguage support" ON)
+option(WITH_CYCLES_OSL "Build Cycles with OpenShadingLanguage support" OFF)
 option(WITH_CYCLES_PATH_GUIDING "Build Cycles with path guiding support" ON)
 option(WITH_CYCLES_DEBUG "Build Cycles with options useful for debugging (e.g., MIS)" OFF)
 

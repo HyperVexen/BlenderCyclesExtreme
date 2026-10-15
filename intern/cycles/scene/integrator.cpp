@@ -120,6 +120,17 @@ NODE_DEFINE(Integrator)
   SOCKET_BOOLEAN(caustics_refractive, "Refractive Caustics", true);
   SOCKET_FLOAT(filter_glossy, "Filter Glossy", 1.0f);
 
+  /* Vexen Extreme: Photon Caustics. */
+  SOCKET_BOOLEAN(use_vexen_extreme, "Use Vexen Extreme", false);
+  SOCKET_BOOLEAN(vexen_photon_caustics, "Vexen Photon Caustics", false);
+  SOCKET_INT(photon_caustics_count, "Photon Caustics Count", 100000);
+  SOCKET_FLOAT(photon_caustics_radius, "Photon Caustics Radius", 0.1f);
+  SOCKET_FLOAT(photon_caustics_alpha, "Photon Caustics Alpha", 0.666667f);
+  SOCKET_INT(photon_caustics_max_bounces, "Photon Caustics Max Bounces", 8);
+  SOCKET_INT(photon_caustics_max_photons, "Photon Caustics Max Photons", 2000000);
+  SOCKET_FLOAT(photon_caustics_clamp, "Photon Caustics Clamp", 10.0f);
+  SOCKET_INT(photon_caustics_gather_mode, "Photon Caustics Gather Mode", 0);
+
   SOCKET_BOOLEAN(use_direct_light, "Use Direct Light", true);
   SOCKET_BOOLEAN(use_indirect_light, "Use Indirect Light", true);
   SOCKET_BOOLEAN(use_diffuse, "Use Diffuse", true);
@@ -276,6 +287,16 @@ void Integrator::device_update(Device *device, DeviceScene *dscene, Scene *scene
   kintegrator->caustics_refractive = caustics_refractive;
   kintegrator->filter_glossy = (filter_glossy == 0.0f) ? FLT_MAX : 1.0f / filter_glossy;
   kintegrator->differential_widen_scale = min(1.0f, filter_glossy);
+
+  /* Vexen Photon Caustics. */
+  kintegrator->use_photon_caustics = (use_vexen_extreme && vexen_photon_caustics) ? 1 : 0;
+  kintegrator->photon_caustics_count = photon_caustics_count;
+  kintegrator->photon_caustics_radius = photon_caustics_radius;
+  kintegrator->photon_caustics_alpha = photon_caustics_alpha;
+  kintegrator->photon_caustics_max_bounces = photon_caustics_max_bounces;
+  kintegrator->photon_caustics_max_photons = photon_caustics_max_photons;
+  kintegrator->photon_caustics_clamp = photon_caustics_clamp;
+  kintegrator->photon_caustics_gather_mode = photon_caustics_gather_mode;
 
   kintegrator->filter_closures = 0;
   if (!use_direct_light) {
@@ -469,6 +490,11 @@ uint64_t Integrator::get_kernel_features() const
 
   if (get_use_light_tree()) {
     kernel_features |= KERNEL_FEATURE_LIGHT_TREE;
+  }
+
+  /* Vexen Photon Caustics. */
+  if (use_vexen_extreme && vexen_photon_caustics) {
+    kernel_features |= KERNEL_FEATURE_PHOTON_CAUSTICS;
   }
 
   return kernel_features;

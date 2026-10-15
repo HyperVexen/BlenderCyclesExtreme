@@ -41,6 +41,17 @@ ccl_device_inline ShaderEvalResult integrate_light_forward(
     return SHADER_EVAL_EMPTY;
   }
 
+#ifdef __PHOTON_CAUSTICS__
+  /* Suppress caustic paths (D -> S+ -> L) evaluated by the photon map to eliminate
+   * double-counting and high-variance path-tracer fireflies. */
+  if (kernel_data.integrator.use_photon_caustics &&
+      kernel_data.integrator.photon_num_stored > 0 &&
+      (path_flag & PATH_RAY_CAUSTIC_SPECULAR))
+  {
+    return SHADER_EVAL_EMPTY;
+  }
+#endif
+
   /* Use visibility flag to skip lights. */
 #ifdef __PASSES__
   {

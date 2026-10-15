@@ -129,6 +129,17 @@ class Integrator : public Node {
   NODE_SOCKET_API(DenoiserQuality, denoiser_quality);
   NODE_SOCKET_API(float, denoiser_upscale_factor);
 
+  /* Vexen Extreme: Photon Caustics. */
+  NODE_SOCKET_API(bool, use_vexen_extreme)
+  NODE_SOCKET_API(bool, vexen_photon_caustics)
+  NODE_SOCKET_API(int, photon_caustics_count)
+  NODE_SOCKET_API(float, photon_caustics_radius)
+  NODE_SOCKET_API(float, photon_caustics_alpha)
+  NODE_SOCKET_API(int, photon_caustics_max_bounces)
+  NODE_SOCKET_API(int, photon_caustics_max_photons)
+  NODE_SOCKET_API(float, photon_caustics_clamp)
+  NODE_SOCKET_API(int, photon_caustics_gather_mode)
+
   enum : uint32_t {
     AO_PASS_MODIFIED = (1 << 0),
     OBJECT_MANAGER = (1 << 1),

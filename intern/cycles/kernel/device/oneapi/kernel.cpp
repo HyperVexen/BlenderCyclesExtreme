@@ -741,6 +741,7 @@ bool oneapi_enqueue_kernel(KernelContext *kernel_context,
         case DEVICE_KERNEL_FILTER_GUIDING_PREPROCESS_TO_SURFACE:
         case DEVICE_KERNEL_FILTER_COLOR_PREPROCESS_TO_SURFACE:
         case DEVICE_KERNEL_FILTER_COLOR_POSTPROCESS_FROM_SURFACE:
+        case DEVICE_KERNEL_PHOTON_EMIT_AND_TRACE:
           kernel_assert(0);
           break;
       }

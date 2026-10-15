@@ -191,6 +191,10 @@ const char *device_kernel_as_string(DeviceKernel kernel)
     case DEVICE_KERNEL_PREFIX_SUM:
       return "prefix_sum";
 
+    /* Photon Caustics. */
+    case DEVICE_KERNEL_PHOTON_EMIT_AND_TRACE:
+      return "photon_emit_and_trace";
+
     case DEVICE_KERNEL_NUM:
       break;
   };

@@ -129,6 +129,15 @@ ccl_device_inline ShaderEvalResult integrate_background(
   }
 #endif /* __MNEE__ */
 
+#ifdef __PHOTON_CAUSTICS__
+  if (kernel_data.integrator.use_photon_caustics &&
+      kernel_data.integrator.photon_num_stored > 0 &&
+      (path_flag & PATH_RAY_CAUSTIC_SPECULAR))
+  {
+    eval_background = false;
+  }
+#endif
+
   /* Evaluate background shader. */
   Spectrum L = zero_spectrum();
 
@@ -217,6 +226,15 @@ ccl_device_inline ShaderEvalResult integrate_sun_lights(
       }
     }
 #endif /* __MNEE__ */
+
+#ifdef __PHOTON_CAUSTICS__
+    if (kernel_data.integrator.use_photon_caustics &&
+        kernel_data.integrator.photon_num_stored > 0 &&
+        (path_flag & PATH_RAY_CAUSTIC_SPECULAR))
+    {
+      continue;
+    }
+#endif
 
     /* Evaluate light shader. */
     Spectrum shader_eval;

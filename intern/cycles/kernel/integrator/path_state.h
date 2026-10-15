@@ -214,14 +214,27 @@ ccl_device_inline void path_state_next(KernelGlobals kg,
     if (label & LABEL_DIFFUSE) {
       visibility |= PATH_RAY_VISIBILITY_DIFFUSE;
       flag |= PATH_RAY_DIFFUSE_ANCESTOR;
+#ifdef __PHOTON_CAUSTICS__
+      flag &= ~PATH_RAY_CAUSTIC_SPECULAR;
+#endif
     }
     else if (label & LABEL_GLOSSY) {
       visibility |= PATH_RAY_VISIBILITY_GLOSSY;
+#ifdef __PHOTON_CAUSTICS__
+      if (flag & PATH_RAY_DIFFUSE_ANCESTOR) {
+        flag |= PATH_RAY_CAUSTIC_SPECULAR;
+      }
+#endif
     }
     else {
       kernel_assert(label & LABEL_SINGULAR);
       visibility |= PATH_RAY_VISIBILITY_GLOSSY;
       flag |= PATH_RAY_SINGULAR | PATH_RAY_MIS_SKIP;
+#ifdef __PHOTON_CAUSTICS__
+      if (flag & PATH_RAY_DIFFUSE_ANCESTOR) {
+        flag |= PATH_RAY_CAUSTIC_SPECULAR;
+      }
+#endif
     }
 
     /* Flag for consistent MIS weights with light tree. */

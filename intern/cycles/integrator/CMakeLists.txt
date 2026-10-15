@@ -32,6 +32,7 @@ set(SRC
   shader_eval.cpp
   work_balancer.cpp
   work_tile_scheduler.cpp
+  photon_pass.cpp
 )
 
 set(SRC_HEADERS
@@ -58,6 +59,7 @@ set(SRC_HEADERS
   shader_eval.h
   work_balancer.h
   work_tile_scheduler.h
+  photon_pass.h
 )
 
 set(LIB

@@ -21,6 +21,10 @@
 #include "kernel/integrator/subsurface.h"
 #include "kernel/integrator/volume_stack.h"
 
+#ifdef __PHOTON_CAUSTICS__
+#  include "kernel/integrator/photon_gather.h"
+#endif
+
 #include "kernel/types.h"
 #include "util/math_intersect.h"
 
@@ -127,6 +131,16 @@ ccl_device_forceinline void integrate_surface_emission(KernelGlobals kg,
 {
   const PathRayVisibility path_visibility = INTEGRATOR_STATE(state, path, visibility);
   const uint32_t path_flag = INTEGRATOR_STATE(state, path, flag);
+
+#ifdef __PHOTON_CAUSTICS__
+  /* Suppress caustic paths (D -> S+ -> L) evaluated by the photon map. */
+  if (kernel_data.integrator.use_photon_caustics &&
+      kernel_data.integrator.photon_num_stored > 0 &&
+      (path_flag & PATH_RAY_CAUSTIC_SPECULAR))
+  {
+    return;
+  }
+#endif
 
 #ifdef __LIGHT_LINKING__
   if (!(path_visibility & PATH_RAY_VISIBILITY_CAMERA) &&
@@ -335,6 +349,16 @@ ccl_device
 
   LightSample ls ccl_optional_struct_init;
   int mnee_vertex_count = 0;  // NOLINT
+
+#ifdef __PHOTON_CAUSTICS__
+  /* Suppress caustic specular NEE connections to avoid double-counting and fireflies. */
+  if (kernel_data.integrator.use_photon_caustics &&
+      kernel_data.integrator.photon_num_stored > 0 &&
+      (INTEGRATOR_STATE(state, path, flag) & PATH_RAY_CAUSTIC_SPECULAR))
+  {
+    return SHADER_EVAL_EMPTY;
+  }
+#endif
 
 #ifdef __MNEE__
   if ((kernel_data.kernel_features & KERNEL_FEATURE_MNEE) &&
@@ -875,6 +899,15 @@ ccl_device int integrate_surface(KernelGlobals kg,
     if (kernel_data.kernel_features & KERNEL_FEATURE_AO) {
       PROFILING_EVENT(PROFILING_SHADE_SURFACE_AO);
       integrate_surface_ao(kg, state, &sd, &rng_state);
+    }
+#endif
+
+#ifdef __PHOTON_CAUSTICS__
+    /* Vexen Photon Caustics gather. */
+    if (kernel_data.integrator.use_photon_caustics &&
+        kernel_data.integrator.photon_num_stored > 0)
+    {
+      integrate_surface_photon_caustics(kg, state, &sd, render_buffer);
     }
 #endif
 

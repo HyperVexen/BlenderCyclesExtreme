@@ -85,6 +85,9 @@ CCL_NAMESPACE_BEGIN
 /* Gaussian splats. */
 #define KERNEL_FEATURE_GSPLATS (1ULL << 32ULL)
 
+/* Photon caustics (Vexen Extreme). */
+#define KERNEL_FEATURE_PHOTON_CAUSTICS (1ULL << 33ULL)
+
 /* Shader node feature mask, to specialize shader evaluation for kernels. */
 
 #define KERNEL_FEATURE_NODE_MASK_SURFACE_LIGHT \
@@ -135,6 +138,7 @@ CCL_NAMESPACE_BEGIN
 #define __SHADOW_CATCHER__
 #define __SHADOW_LINKING__
 #define __GSPLATS__
+#define __PHOTON_CAUSTICS__
 #define __SUBSURFACE__
 #define __TRANSPARENT_SHADOWS__
 #define __VOLUME__
@@ -214,6 +218,9 @@ CCL_NAMESPACE_BEGIN
 #  endif
 #  if !(__KERNEL_FEATURES__ & KERNEL_FEATURE_GSPLATS)
 #    undef __GSPLATS__
+#  endif
+#  if !(__KERNEL_FEATURES__ & KERNEL_FEATURE_PHOTON_CAUSTICS)
+#    undef __PHOTON_CAUSTICS__
 #  endif
 #endif
 

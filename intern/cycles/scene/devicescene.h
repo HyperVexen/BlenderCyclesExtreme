@@ -100,6 +100,11 @@ class DeviceScene {
   device_vector<uint8_t> image_texture_tile_access_state;
   device_vector<KernelImageUDIM> image_texture_udims;
 
+  /* Vexen Photon Caustics */
+  device_vector<PhotonRecord> photons;
+  device_vector<uint> photon_cell_offsets;
+  device_vector<uint> photon_indices;
+
   KernelData data;
 
   DeviceScene(Device *device);

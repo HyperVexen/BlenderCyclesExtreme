@@ -1290,6 +1290,7 @@ static void panel_draw_softshadow(const rctf *box_rect,
 
 static void panel_draw_aligned_backdrop(const ARegion *region,
                                         const Panel *panel,
+                                        const Block *block,
                                         const rcti *rect,
                                         const rcti *header_rect)
 {
@@ -1303,7 +1304,8 @@ static void panel_draw_aligned_backdrop(const ARegion *region,
   }
 
   const bTheme *btheme = theme::theme_get();
-  const float aspect = panel->runtime->block->aspect;
+  const float aspect = (block != nullptr) ? block->aspect :
+                       ((panel->runtime && panel->runtime->block) ? panel->runtime->block->aspect : 1.0f);
   const float radius = btheme->tui.panel_roundness * U.widget_unit * 0.5f / aspect;
 
   immBindBuiltinProgram(GPU_SHADER_3D_UNIFORM_COLOR);
@@ -1399,7 +1401,7 @@ void draw_aligned_panel(const ARegion *region,
   };
 
   if (show_background || (panel->type->flag & PANEL_TYPE_NO_HEADER)) {
-    panel_draw_aligned_backdrop(region, panel, rect, &header_rect);
+    panel_draw_aligned_backdrop(region, panel, block, rect, &header_rect);
   }
 
   /* Draw the widgets and text in the panel header. */

@@ -692,6 +692,49 @@ class CYCLES_RENDER_PT_light_paths_caustics(CyclesButtonsPanel, Panel):
         col.prop(cscene, "caustics_refractive", text="Refractive")
 
 
+class CYCLES_RENDER_PT_vexen_extreme(CyclesButtonsPanel, Panel):
+    bl_label = "Vexen Extreme"
+    bl_context = "render"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw_header(self, context):
+        cscene = context.scene.cycles
+        self.layout.prop(cscene, "use_vexen_extreme", text="")
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
+        cscene = context.scene.cycles
+        layout.active = cscene.use_vexen_extreme
+
+        layout.prop(cscene, "vexen_photon_caustics")
+
+
+class CYCLES_RENDER_PT_vexen_extreme_advanced(CyclesButtonsPanel, Panel):
+    bl_label = "Advanced"
+    bl_parent_id = "CYCLES_RENDER_PT_vexen_extreme"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
+        cscene = context.scene.cycles
+        layout.active = cscene.use_vexen_extreme and cscene.vexen_photon_caustics
+
+        col = layout.column(align=True)
+        col.prop(cscene, "photon_caustics_count")
+        col.prop(cscene, "photon_caustics_radius")
+        col.prop(cscene, "photon_caustics_alpha")
+        col.prop(cscene, "photon_caustics_max_bounces")
+        col.prop(cscene, "photon_caustics_max_photons")
+        col.prop(cscene, "photon_caustics_clamp")
+        col.prop(cscene, "photon_caustics_gather_mode")
+
+
 class CYCLES_RENDER_PT_light_paths_fast_gi(CyclesButtonsPanel, Panel):
     bl_label = "Fast GI Approximation"
     bl_options = {'DEFAULT_CLOSED'}
@@ -2604,6 +2647,8 @@ classes = (
     CYCLES_RENDER_PT_light_paths_clamping,
     CYCLES_RENDER_PT_light_paths_caustics,
     CYCLES_RENDER_PT_light_paths_fast_gi,
+    CYCLES_RENDER_PT_vexen_extreme,
+    CYCLES_RENDER_PT_vexen_extreme_advanced,
     CYCLES_RENDER_PT_volumes,
     CYCLES_RENDER_PT_subdivision,
     CYCLES_RENDER_PT_curves,

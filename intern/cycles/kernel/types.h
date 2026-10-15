@@ -21,6 +21,7 @@
 
 #include "util/projection.h"
 #include "util/static_assert.h"
+#include "util/types_normal.h"
 
 #include "kernel/features.h"
 #include "kernel/svm/types.h"
@@ -301,6 +302,11 @@ enum PathRayFlag : uint32_t {
 
   /* Path has associated wavelength. */
   PATH_RAY_SPECTRAL = (1U << 27U),
+
+  /* Path transitioned from a diffuse surface into a specular/transmission chain.
+   * Caustic illumination along this chain is evaluated by the photon map;
+   * suppressing it here eliminates double-counting and fireflies. */
+  PATH_RAY_CAUSTIC_SPECULAR = (1U << 28U),
 };
 
 // 8bit enum, just in case we need to move more variables in it
@@ -1361,6 +1367,38 @@ enum KernelBVHLayout {
                    BVH_LAYOUT_EMBREEGPU | BVH_LAYOUT_MULTI_EMBREEGPU |
                    BVH_LAYOUT_MULTI_EMBREEGPU_EMBREE,
 };
+ 
+/* Stored photon record in the photon map (32 bytes). */
+struct ccl_align(16) PhotonRecord {
+  packed_float3 position;
+  packed_normal dir;
+  packed_float3 flux;
+  uint32_t pad;
+
+  ccl_device_inline_method void set(const float3 p, const float3 d, const float3 f)
+  {
+    position = p;
+    dir = packed_normal(d);
+    flux = f;
+    pad = 0;
+  }
+
+  ccl_device_inline_method float3 get_position() const
+  {
+    return position;
+  }
+
+  ccl_device_inline_method float3 get_direction() const
+  {
+    return dir.decode();
+  }
+
+  ccl_device_inline_method float3 get_flux() const
+  {
+    return flux;
+  }
+};
+static_assert(sizeof(PhotonRecord) == 32, "PhotonRecord must be exactly 32 bytes");
 
 /* Specialized struct that can become constants in dynamic compilation. */
 #define KERNEL_STRUCT_BEGIN(name, parent) struct ccl_align(16) name {
@@ -1884,6 +1922,8 @@ enum DeviceKernel : int {
   DEVICE_KERNEL_CRYPTOMATTE_POSTPROCESS,
 
   DEVICE_KERNEL_PREFIX_SUM,
+
+  DEVICE_KERNEL_PHOTON_EMIT_AND_TRACE,
 
   DEVICE_KERNEL_NUM,
 };

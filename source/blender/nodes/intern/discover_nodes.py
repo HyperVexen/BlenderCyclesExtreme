@@ -46,9 +46,17 @@ def main() -> int:
     source_root = sys.argv[1]
     output_cc_file = sys.argv[2]
     function_to_generate = sys.argv[3]
+    raw_args = []
+    for arg in sys.argv[4:]:
+        if arg.startswith("@"):
+            with open(arg[1:], "r", encoding="utf-8") as fh:
+                raw_args.extend([line.strip() for line in fh.readlines() if line.strip()])
+        else:
+            raw_args.append(arg)
+
     source_cc_files = [
         os.path.join(source_root, path)
-        for path in sys.argv[4:]
+        for path in raw_args
         if path.endswith(".cc")
     ]
 

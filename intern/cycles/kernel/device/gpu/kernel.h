@@ -40,6 +40,11 @@
 #include "kernel/integrator/shade_surface.h"
 #include "kernel/integrator/shade_volume.h"
 
+#ifdef __PHOTON_CAUSTICS__
+#  include "kernel/integrator/photon_emit.h"
+#  include "kernel/integrator/photon_shade_specular.h"
+#endif
+
 #include "kernel/bake/bake.h"
 
 #include "kernel/film/adaptive_sampling.h"
@@ -1529,3 +1534,46 @@ ccl_gpu_kernel(GPU_KERNEL_BLOCK_NUM_THREADS, GPU_KERNEL_MAX_REGISTERS)
   }
 }
 ccl_gpu_kernel_postfix
+
+/* --------------------------------------------------------------------
+ * Photon Caustics.
+ */
+
+#ifdef __PHOTON_CAUSTICS__
+ccl_gpu_kernel(GPU_KERNEL_BLOCK_NUM_THREADS, GPU_KERNEL_MAX_REGISTERS)
+    ccl_gpu_kernel_signature(photon_emit_and_trace,
+                             ccl_global PhotonRecord *photons,
+                             ccl_global uint *stored_count,
+                             const int num_photons,
+                             const int max_photons,
+                             const int max_specular_bounces,
+                             const float clamp_flux,
+                             const uint seed,
+                             const ccl_global CasterBound *casters,
+                             const int num_casters)
+{
+  const int photon_index = ccl_gpu_global_id_x();
+
+  if (photon_index < num_photons) {
+    PhotonPath photon;
+    if (ccl_gpu_kernel_call(photon_emit(nullptr,
+                                        (uint)photon_index,
+                                        (uint)num_photons,
+                                        seed,
+                                        casters,
+                                        num_casters,
+                                        &photon)))
+    {
+      ccl_gpu_kernel_call(photon_trace_and_store(nullptr,
+                                                 &photon,
+                                                 photons,
+                                                 stored_count,
+                                                 (uint)max_photons,
+                                                 max_specular_bounces,
+                                                 clamp_flux));
+    }
+  }
+}
+ccl_gpu_kernel_postfix
+#endif
+

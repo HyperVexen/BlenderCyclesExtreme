@@ -21,6 +21,7 @@
 #include "scene/object.h"
 #include "scene/osl.h"
 #include "scene/particles.h"
+#include "scene/photon_map.h"
 #include "scene/pointcloud.h"
 #include "scene/procedural.h"
 #include "scene/scene.h"
@@ -68,6 +69,7 @@ Scene ::Scene(const SceneParams &params_, Device *device)
   bake_manager = make_unique<BakeManager>();
   procedural_manager = make_unique<ProceduralManager>();
   volume_manager = make_unique<VolumeManager>();
+  photon_map = make_unique<PhotonMap>();
 
   /* Create nodes after managers, since create_node() can tag the managers. */
   camera = create_node<Camera>();
@@ -155,6 +157,9 @@ void Scene::free_memory(bool final)
     }
 
     lookup_tables->device_free(device, &dscene);
+    if (photon_map) {
+      photon_map->device_free(device);
+    }
   }
 
   if (final) {
@@ -170,6 +175,7 @@ void Scene::free_memory(bool final)
     update_stats.reset();
     procedural_manager.reset();
     volume_manager.reset();
+    photon_map.reset();
   }
 }
 
@@ -611,8 +617,10 @@ void Scene::update_kernel_features()
   }
 
   dscene.data.integrator.use_caustics = false;
-  if (device->info.has_mnee() && has_caustics_caster && has_caustics_receiver &&
-      has_caustics_light)
+  const bool use_vexen_photons = (integrator->get_use_vexen_extreme() &&
+                                  integrator->get_vexen_photon_caustics());
+  if (!use_vexen_photons && device->info.has_mnee() && has_caustics_caster &&
+      has_caustics_receiver && has_caustics_light)
   {
     dscene.data.integrator.use_caustics = true;
     kernel_features |= KERNEL_FEATURE_MNEE;

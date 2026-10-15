@@ -20,6 +20,10 @@ function(add_node_discovery
     set(extra_args "--use-makefile-workaround")
   endif()
 
+  set(sources_file "${CMAKE_CURRENT_BINARY_DIR}/${lib_name}_sources.txt")
+  string(REPLACE ";" "\n" sources_string "${sources}")
+  file(WRITE "${sources_file}" "${sources_string}\n")
+
   add_custom_command(
     OUTPUT
       ${output_file}
@@ -29,11 +33,12 @@ function(add_node_discovery
       ${CMAKE_CURRENT_SOURCE_DIR}
       ${output_file}
       ${output_function}
-      ${sources}
+      "@${sources_file}"
       ${extra_args}
     DEPENDS
       ${sources}
       ${DISCOVER_NODES_PATH}
+      ${sources_file}
   )
   set_source_files_properties(${output_file} PROPERTIES GENERATED TRUE)
   add_library(${lib_name} ${output_file})
