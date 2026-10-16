@@ -139,6 +139,7 @@ class Integrator : public Node {
   NODE_SOCKET_API(int, photon_caustics_max_photons)
   NODE_SOCKET_API(float, photon_caustics_clamp)
   NODE_SOCKET_API(int, photon_caustics_gather_mode)
+  NODE_SOCKET_API(float, photon_caustics_dispersion)
 
   enum : uint32_t {
     AO_PASS_MODIFIED = (1 << 0),

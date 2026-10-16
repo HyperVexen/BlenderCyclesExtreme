@@ -23,6 +23,7 @@ struct PhotonPath {
   uint rng_state;
   int bounce;
   int specular_bounces;
+  float wavelength;
 };
 
 /* Bounding sphere for a specular caustic caster (Milestone 5). */

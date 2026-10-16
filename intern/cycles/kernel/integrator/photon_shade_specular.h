@@ -30,7 +30,8 @@ ccl_device bool photon_trace_and_store(KernelGlobals kg,
                                        ccl_global uint *stored_count,
                                        const uint max_photons,
                                        const int max_specular_bounces,
-                                       const float clamp_flux)
+                                       const float clamp_flux,
+                                       const float dispersion)
 {
   int last_object = OBJECT_NONE;
   int last_prim = PRIM_NONE;
@@ -64,6 +65,13 @@ ccl_device bool photon_trace_and_store(KernelGlobals kg,
     ShaderDataCausticsStorage sd_storage;
     ccl_private ShaderData *sd = AS_SHADER_DATA(&sd_storage);
     shader_setup_from_ray(kg, sd, &ray, &isect);
+
+#ifdef __SPECTRAL__
+    if (photon->wavelength > 0.0f) {
+      sd->rand_wavelength = photon->wavelength;
+      sd->shader_flag |= SD_REQUIRES_WAVELENGTH;
+    }
+#endif
 
     /* Evaluate shader closures.
      * Uses CAUSTICS_MAX_CLOSURE to keep storage and evaluation lean. */
@@ -111,7 +119,7 @@ ccl_device bool photon_trace_and_store(KernelGlobals kg,
         }
       }
 
-      photon_store(photons, stored_count, max_photons, sd->P, -ray.D, flux);
+      photon_store(photons, stored_count, max_photons, sd->P, -ray.D, flux, photon->wavelength);
       return true;
     }
 
@@ -147,6 +155,28 @@ ccl_device bool photon_trace_and_store(KernelGlobals kg,
     Spectrum weight = bsdf_eval / bsdf_pdf;
     if (label & LABEL_TRANSMIT) {
       weight *= sqr(bsdf_eta);
+
+      /* Apply Cauchy dispersion to transmitted direction (Milestone 7). */
+      if (dispersion > 0.0f && photon->wavelength > 0.0f) {
+#ifdef __SPECTRAL__
+        float prob;
+        const float lambda_um = sample_wavelength(photon->wavelength, &prob);
+        constexpr float lambda_d = 0.5876f;
+        const float cauchy_factor = 1.0f + dispersion * (sqr(lambda_d / lambda_um) - 1.0f);
+
+        const float eff_eta = (bsdf_eta > 1.0f) ? (bsdf_eta * cauchy_factor) :
+                                                  (bsdf_eta / cauchy_factor);
+        const float inv_eta = (eff_eta > 0.0f) ? (1.0f / eff_eta) : 1.0f;
+        const float3 normal = (dot(sc->N, sd->wi) < 0.0f) ? -sc->N : sc->N;
+        const float cos_theta_i = dot(normal, sd->wi);
+        const float sin2_t = sqr(inv_eta) * fmaxf(1.0f - sqr(cos_theta_i), 0.0f);
+        if (sin2_t <= 1.0f) {
+          /* In Cycles convention, cos_theta_t is negative in refract_angle. */
+          const float cos_theta_t = -sqrtf(fmaxf(1.0f - sin2_t, 0.0f));
+          bsdf_wo = refract_angle(sd->wi, normal, cos_theta_t, inv_eta);
+        }
+#endif
+      }
     }
     photon->throughput *= weight;
 

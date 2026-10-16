@@ -393,6 +393,7 @@ void BlenderSync::sync_integrator(blender::ViewLayer &b_view_layer,
   integrator->set_photon_caustics_max_photons(get_int(cscene, "photon_caustics_max_photons"));
   integrator->set_photon_caustics_clamp(get_float(cscene, "photon_caustics_clamp"));
   integrator->set_photon_caustics_gather_mode(get_int(cscene, "photon_caustics_gather_mode"));
+  integrator->set_photon_caustics_dispersion(get_float(cscene, "photon_caustics_dispersion"));
 
   integrator->set_use_pixel_jitter(get_boolean(cscene, "use_pixel_jitter"));
 

@@ -761,6 +761,11 @@ class CyclesRenderSettings(bpy.types.PropertyGroup):
         ],
         default='PRIMARY',
     )
+    photon_caustics_dispersion: FloatProperty(
+        name="Spectral Dispersion",
+        description="Physical Cauchy chromatic dispersion for prism/rainbow caustics (0.0 = disabled, 0.03 = standard glass, 0.05 = flint glass/diamond)",
+        default=0.0, min=0.0, max=1.0, precision=4,
+    )
 
     use_guiding: BoolProperty(
         name="Guiding",

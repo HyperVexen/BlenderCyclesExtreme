@@ -733,6 +733,7 @@ class CYCLES_RENDER_PT_vexen_extreme_advanced(CyclesButtonsPanel, Panel):
         col.prop(cscene, "photon_caustics_max_photons")
         col.prop(cscene, "photon_caustics_clamp")
         col.prop(cscene, "photon_caustics_gather_mode")
+        col.prop(cscene, "photon_caustics_dispersion")
 
 
 class CYCLES_RENDER_PT_light_paths_fast_gi(CyclesButtonsPanel, Panel):

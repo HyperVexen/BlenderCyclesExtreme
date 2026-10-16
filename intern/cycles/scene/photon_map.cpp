@@ -4,6 +4,7 @@
 
 #include "scene/photon_map.h"
 #include "kernel/integrator/photon_grid.h"
+#include "scene/integrator.h"
 #include "scene/scene.h"
 #include "util/log.h"
 #include "util/math.h"
@@ -182,18 +183,29 @@ bool PhotonMap::build_grid(Scene *scene, Device *device)
   scene->dscene.photon_cell_offsets.copy_to_device();
   scene->dscene.photon_indices.copy_to_device();
 
+  grid_size_ = grid_size;
+  cell_size_ = cell_size;
+  inv_cell_size_ = inv_cell_size;
+  bounds_min_ = bounds_min;
+  bounds_max_ = bounds_max;
+
   /* 8. Update integrator kernel data. */
   scene->dscene.data.integrator.photon_num_stored = (int)N;
   scene->dscene.data.integrator.photon_grid_size = (int)grid_size;
   scene->dscene.data.integrator.photon_cell_size = cell_size;
   scene->dscene.data.integrator.photon_inv_cell_size = inv_cell_size;
   scene->dscene.data.integrator.photon_caustics_radius = radius;
+  scene->dscene.data.integrator.photon_caustics_dispersion =
+      scene->integrator->get_photon_caustics_dispersion();
+  scene->dscene.data.integrator.photon_caustics_alpha =
+      scene->integrator->get_photon_caustics_alpha();
   scene->dscene.data.integrator.photon_bounds_min = make_float4(
       bounds_min.x, bounds_min.y, bounds_min.z, 0.0f);
   scene->dscene.data.integrator.photon_bounds_max = make_float4(
       bounds_max.x, bounds_max.y, bounds_max.z, 0.0f);
 
   device->const_copy_to("data", &scene->dscene.data, sizeof(scene->dscene.data));
+
 
   printf("  Device pointers: photons=0x%llx, offsets=0x%llx, indices=0x%llx, photon_num_stored=%d\n",
          (unsigned long long)scene->dscene.photons.device_pointer,
@@ -235,6 +247,11 @@ float PhotonMap::get_current_radius() const
   return current_radius_;
 }
 
+void PhotonMap::set_current_radius(const float r)
+{
+  current_radius_ = r;
+}
+
 int PhotonMap::get_iteration() const
 {
   return iteration_;
@@ -255,4 +272,30 @@ device_vector<PhotonRecord> *PhotonMap::get_photons()
   return photons_.get();
 }
 
+uint PhotonMap::get_grid_size() const
+{
+  return grid_size_;
+}
+
+float PhotonMap::get_cell_size() const
+{
+  return cell_size_;
+}
+
+float PhotonMap::get_inv_cell_size() const
+{
+  return inv_cell_size_;
+}
+
+float3 PhotonMap::get_bounds_min() const
+{
+  return bounds_min_;
+}
+
+float3 PhotonMap::get_bounds_max() const
+{
+  return bounds_max_;
+}
+
 CCL_NAMESPACE_END
+

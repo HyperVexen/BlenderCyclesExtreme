@@ -22,6 +22,7 @@ ccl_device_inline bool photon_emit(KernelGlobals kg,
                                    const uint seed,
                                    const ccl_global CasterBound *casters,
                                    const int num_casters,
+                                   const float dispersion,
                                    ccl_private PhotonPath *photon)
 {
   const int num_lights = kernel_data.integrator.num_lights;
@@ -205,6 +206,14 @@ ccl_device_inline bool photon_emit(KernelGlobals kg,
   photon->throughput = rgb_to_spectrum(flux);
   photon->bounce = 0;
   photon->specular_bounces = 0;
+
+  /* Spectral wavelength sampling (Milestone 7). */
+  if (dispersion > 0.0f) {
+    photon->wavelength = clamp(photon_rng_1D(photon), 1e-5f, 1.0f - 1e-5f);
+  }
+  else {
+    photon->wavelength = 0.0f;
+  }
 
   return true;
 }

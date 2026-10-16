@@ -1373,14 +1373,17 @@ struct ccl_align(16) PhotonRecord {
   packed_float3 position;
   packed_normal dir;
   packed_float3 flux;
-  uint32_t pad;
+  float wavelength; /* Wavelength in nm [380..780], 0.0f = achromatic */
 
-  ccl_device_inline_method void set(const float3 p, const float3 d, const float3 f)
+  ccl_device_inline_method void set(const float3 p,
+                                    const float3 d,
+                                    const float3 f,
+                                    const float wl = 0.0f)
   {
     position = p;
     dir = packed_normal(d);
     flux = f;
-    pad = 0;
+    wavelength = wl;
   }
 
   ccl_device_inline_method float3 get_position() const
@@ -1396,6 +1399,11 @@ struct ccl_align(16) PhotonRecord {
   ccl_device_inline_method float3 get_flux() const
   {
     return flux;
+  }
+
+  ccl_device_inline_method float get_wavelength() const
+  {
+    return wavelength;
   }
 };
 static_assert(sizeof(PhotonRecord) == 32, "PhotonRecord must be exactly 32 bytes");

@@ -251,7 +251,7 @@ KERNEL_STRUCT_MEMBER(integrator, float4, photon_bounds_max)
 KERNEL_STRUCT_MEMBER(integrator, int, photon_grid_size)
 KERNEL_STRUCT_MEMBER(integrator, float, photon_cell_size)
 KERNEL_STRUCT_MEMBER(integrator, float, photon_inv_cell_size)
-KERNEL_STRUCT_MEMBER(integrator, int, pad_photon1)
+KERNEL_STRUCT_MEMBER(integrator, float, photon_caustics_dispersion)
 
 KERNEL_STRUCT_MEMBER(integrator, float2, pixel_jitter)
 KERNEL_STRUCT_MEMBER(integrator, int, pad_photon2)

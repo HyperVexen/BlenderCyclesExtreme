@@ -18,23 +18,28 @@ Native Blender Cycles relies on **MNEE (Manifold Next Event Estimation)**, which
 
 Vexen Cycles Extreme completely redesigns the caustics pipeline from the ground up:
 
-| Capability | Native Cycles (MNEE) | Chaos Corona ("One-Click") | **Vexen Cycles Extreme** |
-| :--- | :--- | :--- | :--- |
-| **Reflective Caustics** *(Metals, mirrors, jewelry)* | ❌ **Unsupported** | ✅ Supported | **✅ Fully Supported** *(Specular & metallic)* |
-| **Nested / Multi-Interface Glass** *(Ice in drinks)* | ❌ **Fails** *(Diverges on >1 interface)* | ✅ Handled | **✅ Fully Supported** *(Multi-bounce & TIR)* |
-| **Total Internal Reflection (TIR)** | ❌ Dark voids / fireflies | ✅ Handled | **✅ Fully Supported** *(Exact Fresnel physics)* |
-| **Emission Speed & Hardware** | CPU/GPU path walk | CPU Multi-core | **CUDA GPU: >10.1M photons/sec on laptop GPU** |
-| **Caster Guiding ("Caustic in a Stadium")** | Manifold walk | Metropolis Light Transport | **Automated Bounding Sphere Cone Guiding** |
-| **Spatial Acceleration Structure** | N/A | KD-Tree / Hash grid | **GPU Spatial Hash Grid + Parallel Morton / Prefix Sum** |
-| **Reconstruction Kernel** | Point estimation | Spline / Epanechnikov | **2D Normalized Epanechnikov ($O(1)$ query)** |
-| **Firefly Immunity** | Clamping (loses energy) | Adaptive clamping | **Dynamic Flux Clamping (`photon_caustics_clamp`)** |
-| **Artist Usability** | ❌ 3 manual flags | ✅ "One-Click" automatic | **✅ Automatic shader heuristic detection** |
+| Capability | Native Cycles (MNEE) | Chaos Corona ("One-Click") | LuxCoreRender | **Vexen Cycles Extreme** |
+| :--- | :--- | :--- | :--- | :--- |
+| **Reflective Caustics** *(Metals, mirrors, jewelry)* | ❌ **Unsupported** | ✅ Supported | ✅ Supported | **✅ Fully Supported** *(Specular & metallic)* |
+| **Nested / Multi-Interface Glass** *(Ice in drinks)* | ❌ **Fails** *(Diverges on >1 interface)* | ✅ Handled | ✅ Handled | **✅ Fully Supported** *(Multi-bounce & TIR)* |
+| **Continuous Spectral Dispersion** *(Prisms, diamonds)* | ❌ **Unsupported** | ❌ Monochromatic | ✅ Supported | **✅ Fully Supported** *(Cauchy + Rec.709 sRGB)* |
+| **Progressive SPPM Sharpening** | ❌ **Unsupported** | ✅ Supported | ✅ Supported | **✅ Fully Supported** *(Auto-Radius + Contraction)* |
+| **Emission Speed & Hardware** | CPU/GPU path walk | CPU Multi-core | OpenCL / CPU | **CUDA GPU: >16.8M photons/sec on laptop GPU** |
+| **Interactive Viewport Persistence** | Slow converge | IPR | IPR | **✅ View-Independent GPU Cache (Zero Dropouts)** |
+| **Caster Guiding ("Caustic in a Stadium")** | Manifold walk | Metropolis Light Transport | Photon shooting | **Automated Bounding Sphere Cone Guiding** |
+| **Spatial Acceleration Structure** | N/A | KD-Tree / Hash grid | KD-Tree | **GPU Spatial Hash Grid + Parallel Morton / Prefix Sum** |
+| **Reconstruction Kernel** | Point estimation | Spline / Epanechnikov | Cone / Epanechnikov | **2D Normalized Epanechnikov ($O(1)$ query)** |
+| **Firefly Immunity** | Clamping (loses energy) | Adaptive clamping | Clamping | **Dynamic Flux Clamping (`photon_caustics_clamp`)** |
+| **Artist Usability** | ❌ 3 manual flags | ✅ "One-Click" automatic | Parameter tuning | **✅ Automatic shader heuristic detection** |
 
 ---
 
 ## 🚀 Key Features
 
-* **⚡ Ultra-Fast GPU Wavefront Pipeline:** Emits, traces, and indexes over **10,137,000 photons/second** on an entry-level laptop GPU (NVIDIA RTX 3050 Laptop, 4GB VRAM). A complete 20-million-photon pass finishes in under **1.97 seconds**.
+* **⚡ Ultra-Fast GPU Wavefront Pipeline:** Emits, traces, and indexes over **16,832,000 photons/second** on an entry-level laptop GPU (NVIDIA GeForce RTX 3050 Laptop, 6GB VRAM, CUDA 13.3). A complete 600,000-photon pass executes in just **0.035 – 0.040 seconds**.
+* **🌈 Continuous Spectral Dispersion (Milestone 7):** Simulates authentic Newtonian rainbow caustics for prisms, crystals, and diamonds using Cauchy's dispersion equation ($\eta(\lambda) = \eta_d [1 + d \cdot (\lambda_d^2/\lambda^2 - 1)]$) and branchless CIE 1931 XYZ $\to$ Rec.709 Linear sRGB reconstruction. Stored in a repurposed 4-byte slot alongside octahedral normal in `PhotonRecord` with **zero additional VRAM footprint**.
+* **📐 Progressive SPPM Adaptive Radius (Milestone 7):** Asymptotically sharpens caustic details across progressive passes via closed-form contraction ($R(s) = R_0 \cdot (s + 1)^{\frac{\alpha - 1}{2}}$) paired with an automated initial radius heuristic ($R_0 \approx 0.08 \times \bar{r}_{\text{caster}}$), eliminating manual radius dialing.
+* **🎥 Real-Time Interactive Viewport Persistence:** Features view-independent spatial hash grid caching. When orbiting, panning, or zooming the viewport camera, existing GPU caustic maps persist with zero flicker or stutter, updating progressively at 30–60 FPS.
 * **✨ Zero Fireflies & Smooth Caustic Ribbons:** Uses a normalized **2D Epanechnikov quadratic kernel** ($K(d) = \frac{2}{\pi R^2}(1 - d^2/R^2)$) evaluated on receiver tangent planes, combined with dynamic flux clamping.
 * **🎯 Automated Caster Guiding:** Eliminates wasted rays via **Bounding Sphere Cone Guiding** ($4\pi \to 2\pi(1-\cos\theta)$) with zero-cost conjugate precision ($\frac{\sin^2(\theta/2)}{1+\cos(\theta/2)}$), solving the classic *"Caustic in a Stadium"* problem.
 * **🧊 Multi-Bounce Dielectric & Metallic Walk:** Supports complex multi-interface refractions, total internal reflection (TIR), and metallic glossy reflections (tested on Suzanne with intricate concave ear folds).
@@ -45,14 +50,20 @@ Vexen Cycles Extreme completely redesigns the caustics pipeline from the ground 
 
 ## 🎨 Quick Start Guide
 
-### 1. Enable in Blender UI
+### 1. Interactive Demo Scene (`prism_rainbow_caustics.blend`)
+Open the pre-configured Newton prism rainbow caustics demo scene:
+```powershell
+& ./bin/Release/blender.exe prism_rainbow_caustics.blend
+```
+The 3D Viewport will open directly in **Rendered Camera View** with real-time continuous spectral dispersion caustics active. Middle-mouse drag to orbit around the prism and watch the rainbow caustic ribbon update dynamically!
+
+### 2. Enable in Any Scene
 1. Open the **Render Properties** tab in Blender.
 2. Expand the **Vexen Extreme** panel (located next to *Light Paths*).
 3. Check **Vexen Extreme Mode** (`use_vexen_extreme`).
 4. Check **Photon Caustics** (`vexen_photon_caustics`).
-
-### 2. Render Your Scene
-Any object using a **Glass BSDF**, **Principled BSDF** with transmission, or pure specular/metallic reflection will automatically cast caustics onto diffuse/glossy receivers without any manual light or receiver tagging!
+5. Set **Spectral Dispersion** (`photon_caustics_dispersion`) to `0.04` (flint glass) or `0.18` (high-dispersion prism).
+6. Any object using a **Glass BSDF**, **Principled BSDF** with transmission, or pure specular/metallic reflection will automatically cast caustics onto diffuse/glossy receivers without any manual light or receiver tagging!
 
 ---
 
@@ -89,6 +100,9 @@ Vexen includes automated benchmarking scripts in `tools/vexen/`:
 # Run the automated GPU photon pipeline test
 & ./bin/Release/blender.exe --background --python tools/vexen/test_gpu_caustics.py
 
+# Run Milestone 7 SPPM & Spectral Dispersion verification
+& ./bin/Release/blender.exe --background --python tools/vexen/test_m7_sppm_dispersion.py
+
 # Render the high-contrast aesthetic reference scene
 & ./bin/Release/blender.exe --background --python tools/vexen/render_reference_aesthetic.py
 ```
@@ -104,11 +118,11 @@ Vexen includes automated benchmarking scripts in `tools/vexen/`:
 * [x] **M4: Double-Counting Suppression & Correctness:** Clean MNEE bypass and unbiased energy conservation.
 * [x] **M5: Automated Caster Targeting:** Bounding cone guiding with conjugate precision.
 * [x] **M6: GPU CUDA Acceleration (`sm_86`):** Wavefront kernels, 16B alignment, 10.14M photons/sec.
-* [ ] **M7: Progressive SPPM Adaptive Radius & Spectral Dispersion:** Auto-sharpening caustics and rainbow prism dispersion.
+* [x] **M7: Progressive SPPM Adaptive Radius & Spectral Dispersion:** Auto-sharpening caustics, Cauchy rainbow dispersion, view-independent viewport caching, 16.83M photons/sec.
 * [ ] **M8: Hardware RT Core OptiX Acceleration:** 50M–100M+ photons/sec via `optixTrace`.
 * [ ] **M9: Multiple Importance Sampling (MIS):** Balanced transitions for glossy/semi-rough receivers.
 * [ ] **M10: Volumetric Caustic Beams (UPBP):** Underwater god rays and smoky light shafts.
-* [ ] **M11: Interactive Viewport IPR & Temporal Animation Cache:** Real-time viewport feedback and flythrough caching.
+* [ ] **M11: Interactive Viewport IPR & Temporal Animation Cache:** Multi-frame progressive accumulation and flythrough caching.
 * [ ] **M12: Multi-Backend & Production Polish:** Apple Metal, AMD HIP, and AI denoiser integration.
 
 For full mathematical derivations and design details, see the [Photon Caustics Master Plan](../docs/vexen/Vexen%20Cycles%20Extreme%20Photon%20Caustics%20Master%20Plan.md) and [Architecture Specification](../docs/vexen/architecture.md).

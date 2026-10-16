@@ -12,6 +12,7 @@
 
 CCL_NAMESPACE_BEGIN
 
+
 /* Gather caustic radiance from the photon map at a surface hit point sd. */
 ccl_device Spectrum photon_gather(KernelGlobals kg,
                                   IntegratorState state,
@@ -29,9 +30,23 @@ ccl_device Spectrum photon_gather(KernelGlobals kg,
     }
   }
 
-  const float R = kernel_data.integrator.photon_caustics_radius;
-  if (R <= 0.0f) {
+  const float R0 = kernel_data.integrator.photon_caustics_radius;
+  if (R0 <= 0.0f) {
     return zero_spectrum();
+  }
+
+  /* SPPM adaptive radius contraction (Milestone 7):
+   * As camera samples accumulate, R contracts according to:
+   * R(s) = R_0 * (s + 1)^((alpha - 1) / 2)
+   * With alpha = 2/3, exponent is -1/6.
+   * If alpha >= 1.0 (or disabled), R(s) = R_0 (constant). */
+  float R = R0;
+  const float alpha = kernel_data.integrator.photon_caustics_alpha;
+  if (alpha > 0.0f && alpha < 1.0f) {
+    const int sample = INTEGRATOR_STATE(state, path, sample);
+    const float contraction_exponent = 0.5f * (alpha - 1.0f);
+    const float radius_scale = powf((float)(sample + 1), contraction_exponent);
+    R = fmaxf(R0 * radius_scale, 1e-4f * R0);
   }
 
   const float3 P = sd->P;
@@ -40,9 +55,9 @@ ccl_device Spectrum photon_gather(KernelGlobals kg,
   /* Bounding box rejection. */
   const float4 bmin = kernel_data.integrator.photon_bounds_min;
   const float4 bmax = kernel_data.integrator.photon_bounds_max;
-  if (P.x < bmin.x - R || P.x > bmax.x + R ||
-      P.y < bmin.y - R || P.y > bmax.y + R ||
-      P.z < bmin.z - R || P.z > bmax.z + R)
+  if (P.x < bmin.x - R0 || P.x > bmax.x + R0 ||
+      P.y < bmin.y - R0 || P.y > bmax.y + R0 ||
+      P.z < bmin.z - R0 || P.z > bmax.z + R0)
   {
     return zero_spectrum();
   }
@@ -124,6 +139,15 @@ ccl_device Spectrum photon_gather(KernelGlobals kg,
           f *= (clamp_flux / m);
         }
       }
+
+      /* Spectral dispersion: reconstruct RGB from wavelength if active (Milestone 7). */
+#ifdef __SPECTRAL__
+      const float wl = photon->get_wavelength();
+      if (wl > 0.0f && kernel_data.integrator.photon_caustics_dispersion > 0.0f) {
+        const float power = (f.x + f.y + f.z) * (1.0f / 3.0f);
+        f = power * dispersion_throughput_weight(kg, wl);
+      }
+#endif
 
       accumulated_flux += make_spectrum(f * k_weight);
     }

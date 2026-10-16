@@ -17,14 +17,15 @@ ccl_device_inline bool photon_store(ccl_global PhotonRecord *photons,
                                     const uint max_photons,
                                     const float3 position,
                                     const float3 direction,
-                                    const float3 flux)
+                                    const float3 flux,
+                                    const float wavelength = 0.0f)
 {
   const uint index = atomic_fetch_and_inc_uint32(stored_count);
   if (index >= max_photons) {
     return false;
   }
 
-  photons[index].set(position, direction, flux);
+  photons[index].set(position, direction, flux, wavelength);
   return true;
 }
 

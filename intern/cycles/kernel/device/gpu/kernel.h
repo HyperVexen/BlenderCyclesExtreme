@@ -1550,7 +1550,8 @@ ccl_gpu_kernel(GPU_KERNEL_BLOCK_NUM_THREADS, GPU_KERNEL_MAX_REGISTERS)
                              const float clamp_flux,
                              const uint seed,
                              const ccl_global CasterBound *casters,
-                             const int num_casters)
+                             const int num_casters,
+                             const float dispersion)
 {
   const int photon_index = ccl_gpu_global_id_x();
 
@@ -1562,6 +1563,7 @@ ccl_gpu_kernel(GPU_KERNEL_BLOCK_NUM_THREADS, GPU_KERNEL_MAX_REGISTERS)
                                         seed,
                                         casters,
                                         num_casters,
+                                        dispersion,
                                         &photon)))
     {
       ccl_gpu_kernel_call(photon_trace_and_store(nullptr,
@@ -1570,7 +1572,8 @@ ccl_gpu_kernel(GPU_KERNEL_BLOCK_NUM_THREADS, GPU_KERNEL_MAX_REGISTERS)
                                                  stored_count,
                                                  (uint)max_photons,
                                                  max_specular_bounces,
-                                                 clamp_flux));
+                                                 clamp_flux,
+                                                 dispersion));
     }
   }
 }

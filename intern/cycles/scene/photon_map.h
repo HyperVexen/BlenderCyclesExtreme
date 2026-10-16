@@ -56,12 +56,19 @@ class PhotonMap {
   void set_emitted_count(const size_t count);
 
   float get_current_radius() const;
+  void set_current_radius(const float r);
   int get_iteration() const;
 
   PhotonRecord *data();
   const PhotonRecord *data() const;
 
   device_vector<PhotonRecord> *get_photons();
+
+  uint get_grid_size() const;
+  float get_cell_size() const;
+  float get_inv_cell_size() const;
+  float3 get_bounds_min() const;
+  float3 get_bounds_max() const;
 
  protected:
   unique_ptr<device_vector<PhotonRecord>> photons_;
@@ -74,6 +81,13 @@ class PhotonMap {
   float current_radius_ = 0.1f;
   float alpha_ = 0.666667f;
   uint max_photons_ = 2000000;
+
+  uint grid_size_ = 0;
+  float cell_size_ = 0.0f;
+  float inv_cell_size_ = 0.0f;
+  float3 bounds_min_ = make_float3(0.0f, 0.0f, 0.0f);
+  float3 bounds_max_ = make_float3(0.0f, 0.0f, 0.0f);
 };
+
 
 CCL_NAMESPACE_END

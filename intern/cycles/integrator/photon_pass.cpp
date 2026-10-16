@@ -61,27 +61,54 @@ static bool shader_is_specular_caster(Shader *shader)
 static void build_caster_list(Scene *scene, vector<CasterBound> &casters)
 {
   casters.clear();
+  printf("PhotonPass: build_caster_list - total objects = %zu\n", scene->objects.size());
   for (Object *object : scene->objects) {
-    if (object->bounds.valid()) {
-      bool is_caster = object->get_is_caustics_caster();
-      if (!is_caster && object->get_geometry()) {
-        Geometry *geom = object->get_geometry();
-        for (Node *node : geom->get_used_shaders()) {
-          Shader *shader = static_cast<Shader *>(node);
-          if (shader_is_specular_caster(shader)) {
-            is_caster = true;
-            break;
-          }
+    bool is_caster = object->get_is_caustics_caster();
+    if (!is_caster && object->get_geometry()) {
+      Geometry *geom = object->get_geometry();
+      for (Node *node : geom->get_used_shaders()) {
+        Shader *shader = static_cast<Shader *>(node);
+        if (shader_is_specular_caster(shader)) {
+          is_caster = true;
+          break;
         }
       }
-      if (is_caster) {
+    }
+    printf("  Object: bounds_valid=%d, is_caster=%d, name_id=%s\n",
+           (int)object->bounds.valid(), (int)is_caster, object->name.c_str());
+    if (is_caster) {
+      if (!object->bounds.valid()) {
+        object->compute_bounds(false);
+        printf("    Computed missing bounds: valid=%d, size=(%.3f, %.3f, %.3f)\n",
+               (int)object->bounds.valid(),
+               object->bounds.size().x, object->bounds.size().y, object->bounds.size().z);
+      }
+      if (object->bounds.valid()) {
         CasterBound bound;
         bound.center = object->bounds.center();
         bound.radius = fmaxf(0.5f * len(object->bounds.size()), 1e-3f);
         casters.push_back(bound);
+        printf("    Added caster: center=(%.3f, %.3f, %.3f), radius=%.4f\n",
+               bound.center.x, bound.center.y, bound.center.z, bound.radius);
       }
     }
   }
+  fflush(stdout);
+}
+
+
+static float compute_auto_radius(const vector<CasterBound> &casters)
+{
+  if (casters.empty()) {
+    return 0.05f;
+  }
+  float total_radius = 0.0f;
+  for (const CasterBound &c : casters) {
+    total_radius += c.radius;
+  }
+  const float mean_radius = total_radius / (float)casters.size();
+  /* Target ~2% of mean caster radius, bounded between 5mm (0.005m) and 0.5m */
+  return clamp(0.02f * mean_radius, 0.005f, 0.5f);
 }
 
 bool PhotonPass::execute_cpu(Scene *scene,
@@ -115,6 +142,15 @@ bool PhotonPass::execute_cpu(Scene *scene,
     return true;
   }
 
+  float initial_radius = scene->integrator->get_photon_caustics_radius();
+  if (initial_radius <= 0.0f) {
+    initial_radius = compute_auto_radius(casters);
+    printf("PhotonPass [CPU]: Auto-computed initial gather radius = %.4f m based on %zu casters\n",
+           initial_radius, casters.size());
+    scene->dscene.data.integrator.photon_caustics_radius = initial_radius;
+  }
+  photon_map->set_current_radius(initial_radius);
+
   const uint max_photons = (uint)scene->integrator->get_photon_caustics_max_photons();
   photon_map->allocate(device, max_photons);
   photon_map->clear();
@@ -129,6 +165,9 @@ bool PhotonPass::execute_cpu(Scene *scene,
   if (!kernel_thread_globals || kernel_thread_globals->empty()) {
     return false;
   }
+
+  const float dispersion = scene->integrator->get_photon_caustics_dispersion();
+  scene->dscene.data.integrator.photon_caustics_dispersion = dispersion;
 
   uint stored_count = 0;
   const double start_time = time_dt();
@@ -147,6 +186,7 @@ bool PhotonPass::execute_cpu(Scene *scene,
                       seed,
                       caster_data,
                       num_casters,
+                      dispersion,
                       &photon))
       {
         photon_trace_and_store(kg,
@@ -155,7 +195,8 @@ bool PhotonPass::execute_cpu(Scene *scene,
                                &stored_count,
                                max_photons,
                                max_specular_bounces,
-                               clamp_flux);
+                               clamp_flux,
+                               dispersion);
       }
     });
   });
@@ -205,6 +246,15 @@ bool PhotonPass::execute_gpu(Scene *scene,
     LOG_INFO << "PhotonPass [GPU]: No specular casters found in scene; skipping GPU photon pass.";
     return true;
   }
+
+  float initial_radius = scene->integrator->get_photon_caustics_radius();
+  if (initial_radius <= 0.0f) {
+    initial_radius = compute_auto_radius(casters);
+    printf("PhotonPass [GPU]: Auto-computed initial gather radius = %.4f m based on %zu casters\n",
+           initial_radius, casters.size());
+    scene->dscene.data.integrator.photon_caustics_radius = initial_radius;
+  }
+  photon_map->set_current_radius(initial_radius);
 
   const uint max_photons = (uint)scene->integrator->get_photon_caustics_max_photons();
   photon_map->allocate(device, max_photons);
@@ -269,6 +319,10 @@ bool PhotonPass::execute_gpu(Scene *scene,
   const int32_t i_seed = (int32_t)seed;
   const int32_t i_num_casters = (int32_t)num_casters;
 
+  const float dispersion = scene->integrator->get_photon_caustics_dispersion();
+  scene->dscene.data.integrator.photon_caustics_dispersion = dispersion;
+  device->const_copy_to("data", &scene->dscene.data, sizeof(scene->dscene.data));
+
   const DeviceKernelArguments args(&d_photons,
                                    &d_stored,
                                    &i_num_photons,
@@ -277,7 +331,8 @@ bool PhotonPass::execute_gpu(Scene *scene,
                                    &clamp_flux,
                                    &i_seed,
                                    &d_casters_ptr,
-                                   &i_num_casters);
+                                   &i_num_casters,
+                                   &dispersion);
 
   queue->enqueue(DEVICE_KERNEL_PHOTON_EMIT_AND_TRACE, i_num_photons, args);
 

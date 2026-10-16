@@ -11,7 +11,9 @@
 #include "scene/integrator.h"
 #include "scene/light.h"
 #include "scene/object.h"
+#include "scene/photon_map.h"
 #include "scene/scene.h"
+
 #include "scene/shader.h"
 #include "scene/stats.h"
 #include "scene/tabulated_sobol.h"
@@ -130,6 +132,7 @@ NODE_DEFINE(Integrator)
   SOCKET_INT(photon_caustics_max_photons, "Photon Caustics Max Photons", 2000000);
   SOCKET_FLOAT(photon_caustics_clamp, "Photon Caustics Clamp", 10.0f);
   SOCKET_INT(photon_caustics_gather_mode, "Photon Caustics Gather Mode", 0);
+  SOCKET_FLOAT(photon_caustics_dispersion, "Photon Caustics Dispersion", 0.0f);
 
   SOCKET_BOOLEAN(use_direct_light, "Use Direct Light", true);
   SOCKET_BOOLEAN(use_indirect_light, "Use Indirect Light", true);
@@ -297,6 +300,19 @@ void Integrator::device_update(Device *device, DeviceScene *dscene, Scene *scene
   kintegrator->photon_caustics_max_photons = photon_caustics_max_photons;
   kintegrator->photon_caustics_clamp = photon_caustics_clamp;
   kintegrator->photon_caustics_gather_mode = photon_caustics_gather_mode;
+  kintegrator->photon_caustics_dispersion = photon_caustics_dispersion;
+
+  if (scene->photon_map && scene->photon_map->get_stored_count() > 0) {
+    kintegrator->photon_num_stored = (int)scene->photon_map->get_stored_count();
+    kintegrator->photon_grid_size = (int)scene->photon_map->get_grid_size();
+    kintegrator->photon_cell_size = scene->photon_map->get_cell_size();
+    kintegrator->photon_inv_cell_size = scene->photon_map->get_inv_cell_size();
+    const float3 bmin = scene->photon_map->get_bounds_min();
+    const float3 bmax = scene->photon_map->get_bounds_max();
+    kintegrator->photon_bounds_min = make_float4(bmin.x, bmin.y, bmin.z, 0.0f);
+    kintegrator->photon_bounds_max = make_float4(bmax.x, bmax.y, bmax.z, 0.0f);
+  }
+
 
   kintegrator->filter_closures = 0;
   if (!use_direct_light) {

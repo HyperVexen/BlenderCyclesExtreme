@@ -221,7 +221,8 @@ void Session::run_main_render_loop()
       if (scene->integrator->get_use_vexen_extreme() &&
           scene->integrator->get_vexen_photon_caustics())
       {
-        if (render_work.path_trace.start_sample == 0) {
+        const bool need_photon_pass = (scene->photon_map->get_stored_count() == 0);
+        if (render_work.path_trace.num_samples > 0 && need_photon_pass) {
           printf("Vexen Photon Caustics: Executing photon pass...\n");
           fflush(stdout);
           scene->photon_map->reset(scene->integrator->get_photon_caustics_radius(),
@@ -247,6 +248,7 @@ void Session::run_main_render_loop()
           }
         }
       }
+
 
       /* render */
       path_trace_->render(render_work);
@@ -351,6 +353,10 @@ RenderWork Session::run_update_for_next_iteration()
 
   /* Update scene */
   const bool reset_scene = update_scene(delayed_reset_.do_reset);
+  if (reset_scene && scene->photon_map) {
+    scene->photon_map->set_stored_count(0);
+  }
+
 
   /* Update buffers for new parameters. After scene update which influences the passes used. */
   bool have_tiles = true;
